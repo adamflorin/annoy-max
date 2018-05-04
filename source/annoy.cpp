@@ -12,10 +12,16 @@
 #include "kissrandom.h"
 
 extern "C" {
+
+	const long DEFAULT_NUM_DIMENSIONS = 20;
+	const long DEFAULT_NUM_NEIGHBORS = 2;
+
 	// External struct
 	typedef struct _annoy {
 		t_object object;
+		long num_dimensions = DEFAULT_NUM_DIMENSIONS;
 		AnnoyIndex<int, float, Angular, Kiss32Random> *index;
+		void *neighbors_outlet;
 	} t_annoy;
 
 	// Method prototypes
@@ -24,6 +30,9 @@ extern "C" {
 	void annoy_assist(t_annoy *x, void *b, long m, long a, char *s);
 	void annoy_load(t_annoy *x, t_symbol *s);
 	void annoy_unload(t_annoy *x);
+	void annoy_get_nns_by_item(t_annoy *x, long n);
+	void annoy_get_nns_by_vector(t_annoy *x, t_symbol *s, long argc, t_atom *argv);
+	void annoy_output_neighbors(t_annoy *x, std::vector<int> &neighbors);
 
 	// External class
 	static t_class *annoy_class = NULL;
@@ -43,6 +52,8 @@ extern "C" {
 		class_addmethod(c, (method)annoy_assist, "assist", A_CANT, 0);
 		class_addmethod(c, (method)annoy_load, "load", A_SYM, 0);
 		class_addmethod(c, (method)annoy_unload, "unload", 0);
+		class_addmethod(c, (method)annoy_get_nns_by_item, "get_nns_by_item", A_LONG, 0);
+		class_addmethod(c, (method)annoy_get_nns_by_vector, "get_nns_by_vector", A_GIMME, 0);
 
 		class_register(CLASS_BOX, c);
 		annoy_class = c;
@@ -56,9 +67,14 @@ extern "C" {
 			return x;
 		}
 
-		// annoy
-		int f = 20;
-		x->index = new AnnoyIndex<int, float, Angular, Kiss32Random>(f);
+		x->neighbors_outlet = listout(x);
+
+		if (argc > 0) {
+			if (atom_gettype(argv) == A_LONG) {
+				x->num_dimensions = atom_getlong(argv);
+			}
+		}
+		x->index = new AnnoyIndex<int, float, Angular, Kiss32Random>(x->num_dimensions);
 
 		return x;
 	}
@@ -88,6 +104,47 @@ extern "C" {
 
 	void annoy_unload(t_annoy *x) {
 		x->index->unload();
-		object_post((t_object*)x, "Unloaded annoy file");
+	}
+
+	void annoy_get_nns_by_item(t_annoy *x, long item) {
+		std::vector<int> neighbors;
+		std::vector<float> distances;
+		x->index->get_nns_by_item(
+			item,
+			DEFAULT_NUM_NEIGHBORS,
+			(size_t) -1,
+			&neighbors,
+			&distances
+		);
+		annoy_output_neighbors(x, neighbors);
+	}
+
+	void annoy_get_nns_by_vector(t_annoy *x, t_symbol *s, long argc, t_atom *argv) {
+		float vector[x->num_dimensions];
+		long i;
+		for (i = 0; i < std::min(argc, x->num_dimensions); i++) {
+			vector[i] = atom_getfloat(&argv[i]);
+		}
+		std::vector<int> neighbors;
+		std::vector<float> distances;
+		x->index->get_nns_by_vector(
+			(const float *)vector,
+			DEFAULT_NUM_NEIGHBORS,
+			(size_t) -1,
+			&neighbors,
+			&distances
+		);
+		annoy_output_neighbors(x, neighbors);
+	}
+
+	void annoy_output_neighbors(t_annoy *x, std::vector<int> &neighbors) {
+		long i;
+		t_atom neighbor_atoms[DEFAULT_NUM_NEIGHBORS];
+
+		for (i = 0; i < DEFAULT_NUM_NEIGHBORS; i++) {
+			atom_setlong(neighbor_atoms + i, neighbors[i]);
+		}
+
+		outlet_list(x->neighbors_outlet, 0L, DEFAULT_NUM_NEIGHBORS, neighbor_atoms);
 	}
 }
