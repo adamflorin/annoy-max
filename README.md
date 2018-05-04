@@ -1,10 +1,15 @@
-# [annoy~]
+# [annoy]
 
-`[annoy~]` is a Max wrapper around [`annoy`](https://github.com/spotify/annoy),
+`[annoy]` is a Max wrapper around [`annoy`](https://github.com/spotify/annoy),
 an Approximate Nearest Neighbors search.
 
-
 ## Developing
+
+### Installing dependencies
+
+[Clone annoy](https://github.com/spotify/annoy) and make sure that `annoy/src` is linked to in Xcode "Header Search Paths".
+
+### Building
 
 For Mac and PC:
 
