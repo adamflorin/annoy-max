@@ -1,7 +1,7 @@
 # [annoy]
 
-`[annoy]` is a Max wrapper around [`annoy`](https://github.com/spotify/annoy),
-an Approximate Nearest Neighbors search.
+`[annoy]` is a Max wrapper around [Annoy](https://github.com/spotify/annoy),
+the Approximate Nearest Neighbors search index.
 
 
 ## Developing
