@@ -22,6 +22,7 @@ extern "C" {
 		long num_dimensions = DEFAULT_NUM_DIMENSIONS;
 		AnnoyIndex<int, float, Angular, Kiss32Random> *index;
 		void *neighbors_outlet;
+		void *distances_outlet;
 	} t_annoy;
 
 	// Method prototypes
@@ -32,7 +33,7 @@ extern "C" {
 	void annoy_unload(t_annoy *x);
 	void annoy_get_nns_by_item(t_annoy *x, long n);
 	void annoy_get_nns_by_vector(t_annoy *x, t_symbol *s, long argc, t_atom *argv);
-	void annoy_output_neighbors(t_annoy *x, std::vector<int> &neighbors);
+	void annoy_output_neighbors(t_annoy *x, std::vector<int> &neighbors, std::vector<float> &distances);
 
 	// External class
 	static t_class *annoy_class = NULL;
@@ -67,6 +68,7 @@ extern "C" {
 			return x;
 		}
 
+		x->distances_outlet = listout(x);
 		x->neighbors_outlet = listout(x);
 
 		if (argc > 0) {
@@ -116,7 +118,7 @@ extern "C" {
 			&neighbors,
 			&distances
 		);
-		annoy_output_neighbors(x, neighbors);
+		annoy_output_neighbors(x, neighbors, distances);
 	}
 
 	void annoy_get_nns_by_vector(t_annoy *x, t_symbol *s, long argc, t_atom *argv) {
@@ -134,17 +136,20 @@ extern "C" {
 			&neighbors,
 			&distances
 		);
-		annoy_output_neighbors(x, neighbors);
+		annoy_output_neighbors(x, neighbors, distances);
 	}
 
-	void annoy_output_neighbors(t_annoy *x, std::vector<int> &neighbors) {
+	void annoy_output_neighbors(t_annoy *x, std::vector<int> &neighbors, std::vector<float> &distances) {
 		long i;
 		t_atom neighbor_atoms[DEFAULT_NUM_NEIGHBORS];
+		t_atom distance_atoms[DEFAULT_NUM_NEIGHBORS];
 
 		for (i = 0; i < DEFAULT_NUM_NEIGHBORS; i++) {
 			atom_setlong(neighbor_atoms + i, neighbors[i]);
+			atom_setfloat(distance_atoms + i, distances[i]);
 		}
 
 		outlet_list(x->neighbors_outlet, 0L, DEFAULT_NUM_NEIGHBORS, neighbor_atoms);
+		outlet_list(x->distances_outlet, 0L, DEFAULT_NUM_NEIGHBORS, distance_atoms);
 	}
 }
