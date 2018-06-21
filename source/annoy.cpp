@@ -5,6 +5,8 @@
 * Copyright 2018 Adam Florin
 */
 
+#define NOMINMAX
+
 #include "ext.h"
 #include "ext_obex.h"
 
@@ -122,7 +124,7 @@ extern "C" {
 	}
 
 	void annoy_get_nns_by_vector(t_annoy *x, t_symbol *s, long argc, t_atom *argv) {
-		float vector[x->num_dimensions];
+		float vector[DEFAULT_NUM_DIMENSIONS]; // x->num_dimensions];
 		long i;
 		for (i = 0; i < std::min(argc, x->num_dimensions); i++) {
 			vector[i] = atom_getfloat(&argv[i]);
